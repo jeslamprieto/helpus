@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HelpUs — Prototipo (v2 mejorado)</title>
+  <style>
+    *{box-sizing:border-box}
+    :root{
+      --bg:#ffffff;
+      --text:#12202b;
+      --muted:#6b7280;
+      --primary:#0f1724;
+      --accent:#0b62d6;
+      --card:#fbfdff;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --soft-border:#eef4fa;
+    }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.4;
+    }
+    a{color:inherit}
+    /* Header */
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid #eef2f6;position:sticky;top:0;background:var(--bg);z-index:50}
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand img{width:56px;height:56px;border-radius:12px;object-fit:cover}
+    .brand h1{font-size:20px;margin:0}
+    .login-btn{background:var(--primary);color:#fff;border:none;padding:10px 14px;border-radius:10px;cursor:pointer}
+    /* Layout */
+    .wrap{max-width:1200px;margin:20px auto;padding:0 20px;display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+    /* Controls */
+    .controls{display:flex;gap:12px;margin-bottom:12px;align-items:center}
+    .search{flex:1;display:flex;gap:10px}
+    input[type="text"], select, .filter-btn{
+      padding:10px;border-radius:10px;border:1px solid #e6eef6;background:#fff;font-size:14px;outline:none;
+    }
+    input[type="text"]:focus, select:focus{box-shadow:0 6px 18px rgba(11,98,214,0.06);border-color:var(--accent)}
+    .btn-clear{padding:10px 12px;border-radius:10px;border:1px solid #e6eef6;background:#fff;cursor:pointer}
+    /* Grid productos */
+    .results-title{font-weight:700;margin:8px 0 14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+    .card{background:#fff;border:1px solid var(--soft-border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px rgba(18,32,43,0.04);display:flex;flex-direction:column;transition:transform .12s, box-shadow .12s}
+    .card:hover{transform:translateY(-6px);box-shadow:0 12px 30px rgba(18,32,43,0.06)}
+    .img-wrap{height:190px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center}
+    .img-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s; border-bottom:1px solid var(--soft-border)}
+    .img-wrap img:hover{transform:scale(1.04)}
+    .card-body{padding:14px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .meta{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .title{font-weight:700;margin:0}
+    .origin{background:#eef7ff;color:var(--accent);padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px}
+    .desc{color:#4b5560;font-size:13px;margin:0}
+    .price{font-weight:800;font-size:16px}
+    .eta{font-size:13px;color:var(--muted)}
+    .card-actions{display:flex;gap:10px;margin-top:auto;align-items:center}
+    .btn{padding:10px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    .btn-compare{background:#fff;border:1px solid #e6f0ff;color:var(--primary)}
+    .btn-add{background:var(--primary);color:#fff;display:inline-flex;gap:8px;align-items:center}
+    .btn-added{background:#0f5132;color:#fff;border:1px solid rgba(255,255,255,0.06)}
+    .small{font-size:13px;padding:8px 10px;border-radius:8px}
+    /* Toast (mensaje rápido) */
+    .toast{
+      position:fixed;right:20px;top:84px;z-index:120;display:none;min-width:220px;
+      background:#f0fdf4;color:#064e3b;border:1px solid #bbf7d0;padding:10px 14px;border-radius:10px;box-shadow:0 12px 40px rgba(2,6,23,0.12);
+    }
+    .toast.show{display:block;animation:toastIn .18s ease}
+    @keyframes toastIn{from{transform:translateY(-6px);opacity:0}to{transform:translateY(0);opacity:1}}
+    /* Carrito lateral (siempre visible y fijo) */
+    .sidebar{background:var(--card);border:1px solid #eef6ff;border-radius:12px;padding:16px;height:fit-content;position:sticky;top:84px}
+    .cart-title{font-weight:800;margin:0 0 8px}
+    .cart-header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .cart-count{background:var(--primary);color:#fff;padding:6px 10px;border-radius:10px;font-weight:800}
+    .cart-list{display:flex;flex-direction:column;gap:10px;max-height:380px;overflow:auto;padding-right:6px}
+    .cart-item{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px;border:1px solid #f1f6ff}
+    .ci-thumb{width:56px;height:56px;border-radius:8px;overflow:hidden;flex:0 0 56px}
+    .ci-thumb img{width:100%;height:100%;object-fit:cover}
+    .ci-info{flex:1}
+    .ci-name{font-weight:700;font-size:14px;margin:0}
+    .ci-meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .ci-price{font-weight:800}
+    .ci-remove{background:#fff;border:1px solid #eef3fb;padding:6px 8px;border-radius:8px;cursor:pointer}
+    .cart-empty{color:var(--muted);padding:18px;text-align:center}
+    .cart-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-weight:800;font-size:18px}
+    .checkout-btn{width:100%;background:var(--primary);color:#fff;padding:12px;border-radius:12px;border:none;margin-top:12px;cursor:pointer;font-weight:800}
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+    /* Review section */
+    .reviews{grid-column:1 / span 1;margin-top:18px;padding-top:12px;border-top:1px dashed #eef3f9}
+    .review-form{display:grid;gap:8px;max-width:680px}
+    textarea{min-height:86px;resize:vertical;padding:10px;border:1px solid #eaeef6;border-radius:10px}
+    .review-item{background:#fbfdff;border-radius:10px;padding:10px;border:1px solid #eef6ff;margin-top:10px}
+    .clear-reviews{background:#fff;border:1px solid #eef3fb;padding:8px;border-radius:8px;cursor:pointer}
+    /* Modal pago (centrado, sin animación) */
+    .modal-back{position:fixed;inset:0;background:rgba(8,10,12,0.45);display:none;align-items:center;justify-content:center;z-index:90}
+    .modal{width:560px;background:#fff;border-radius:12px;padding:18px;border:1px solid #eef2f7;box-shadow:0 30px 80px rgba(2,6,23,0.25)}
+    .modal h3{margin:0 0 12px}
+    .modal .row{display:flex;gap:10px}
+    .close-btn{background:#fff;border:1px solid #eee;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .success{background:#ecfdf5;border:1px solid #bbf7d0;padding:12px;border-radius:10px;margin-top:12px;color:#065f46}
+    .field-error{border-color:var(--danger)!important;box-shadow:0 4px 18px rgba(239,68,68,0.08)}
+    /* small helpers */
+    .flex{display:flex;gap:8px;align-items:center}
+    .right{margin-left:auto}
+    /* Responsive */
+    @media (max-width:1100px){
+      .wrap{grid-template-columns:1fr}
+      .sidebar{position:relative;order:2;top:auto}
+      .toast{right:12px;left:12px;top:110px}
+    }
+  </style>
+</head>
+<body>
+  <!-- Notificación tipo toast -->
+  <div id="toast" class="toast"></div>
+
+  <header>
+    <div class="brand">
+      <img src="imagenes/logo.png" alt="Logo HelpUs" onerror="this.src='imagenes/default.jpeg'">
+      <div>
+        <h1>HelpUs — Catálogo unificado (prototipo)</h1>
+        <div style="font-size:13px;color:#6b7280"></div>
+      </div>
+    </div>
+    <button class="login-btn" onclick="alert('Inicio de sesión simulado')">Iniciar sesión</button>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ===================== LISTA Y BUSCADOR ===================== -->
+    <section>
+      <div class="controls">
+        <div class="search" style="flex:1">
+          <input id="q" type="text" placeholder="Buscar producto..." oninput="renderList()">
+          <select id="source" onchange="renderList()">
+            <option value="all">Todas las plataformas</option>
+            <option value="Rappi">Rappi</option>
+            <option value="Didi">Didi Food</option>
+            <option value="Falabella">Falabella</option>
+            <option value="iFood">iFood</option>
+            <option value="Éxito">Éxito</option>
+          </select>
+        </div>
+        <button class="btn-clear" onclick="resetFilters()">Limpiar</button>
+      </div>
+
+      <div class="results-title">
+        Resultados — <span style="color:#6b7280">productos de ejemplo</span>
+      </div>
+
+      <div class="grid" id="productGrid"></div>
+
+      <!-- ===================== RESEÑAS ===================== -->
+      <section class="reviews" aria-labelledby="reviewsTitle">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <h2 id="reviewsTitle">Reseñas y comentarios</h2>
+          <button class="clear-reviews" onclick="clearReviews()">Borrar todas</button>
+        </div>
+
+        <form id="reviewForm" class="review-form" onsubmit="submitReview(event)">
+          <div style="display:flex;gap:8px">
+            <input id="r-name" placeholder="Tu nombre" required style="flex:1">
+            <select id="r-rating" required style="width:150px">
+              <option value="">Calificación</option>
+              <option value="5">5 — Excelente</option>
+              <option value="4">4 — Muy bueno</option>
+              <option value="3">3 — Bueno</option>
+              <option value="2">2 — Regular</option>
+              <option value="1">1 — Malo</option>
+            </select>
+          </div>
+          <textarea id="r-text" placeholder="Tu comentario..." required></textarea>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn-compare btn small" onclick="fillExampleReview()">Ejemplo</button>
+            <button type="submit" class="btn-add btn small">Enviar reseña</button>
+          </div>
+        </form>
+
+        <div id="reviewsList"></div>
+      </section>
+
+    </section>
+
+    <!-- ===================== SIDEBAR CARRITO ===================== -->
+    <aside class="sidebar" aria-label="Carrito">
+      <div class="cart-header">
+        <h3 class="cart-title">Carrito</h3>
+        <span id="cartCount" class="cart-count">0</span>
+      </div>
+
+      <div class="cart-list" id="cartList">
+        <div class="cart-empty">No hay productos en el carrito.</div>
+      </div>
+
+      <div class="cart-total">
+        <div>Total</div>
+        <div id="totalPrice">$0</div>
+      </div>
+
+      <button class="checkout-btn" onclick="openCheckout()">Proceder al pago</button>
+      <div class="note">Prototipo para validación. El pago es simulado.</div>
+    </aside>
+
+  </main>
+
+  <!-- ===================== MODAL DE CHECKOUT ===================== -->
+  <div class="modal-back" id="checkoutBack" role="dialog" aria-modal="true">
+    <div class="modal" id="checkoutModal">
+      
+      <!-- TITULO -->
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Checkout — Completa el pago</h3>
+        <button class="close-btn" onclick="closeCheckout()">Cerrar</button>
+      </div>
+
+      <!-- RESUMEN -->
+      <div id="orderSummary" style="background:#f9fafb;padding:10px;border-radius:10px;margin-bottom:10px;font-size:13px"></div>
+
+      <!-- FORMULARIO -->
+      <form id="checkoutForm" onsubmit="completePayment(event)" style="margin-top:12px">
+
+        <label>Nombre del titular</label>
+        <input id="c-name" type="text" required placeholder="Como aparece en la tarjeta">
+
+        <div class="row" style="margin-top:10px">
+          <div style="flex:1">
+            <label>Método de pago</label>
+            <select id="method" required onchange="togglePaymentFields()">
+              <option value="">Selecciona</option>
+              <option value="card">Tarjeta débito / crédito</option>
+              <option value="pse">PSE / Transferencia</option>
+              <option value="cash">Contra entrega</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>Banco / Proveedor</label>
+            <select id="bank" required>
+              <option value="">Selecciona banco</option>
+              <option>Bancolombia</option>
+              <option>Banco de Bogotá</option>
+              <option>Davivienda</option>
+              <option>BBVA Colombia</option>
+              <option>Banco Caja Social</option>
+              <option>Nequi</option>
+              <option>Daviplata</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TARJETA -->
+        <div id="cardFields" style="margin-top:10px;display:none">
+          <label>Número de tarjeta</label>
+          <input id="cardNumber" maxlength="19" placeholder="XXXX XXXX XXXX XXXX" pattern="[0-9 ]*">
+
+          <div class="row" style="margin-top:8px">
+            <input id="expiry" placeholder="MM/AA" style="flex:1">
+            <input id="cvv" placeholder="CVV" style="width:120px">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button type="button" class="close-btn" onclick="closeCheckout()" style="flex:1">Cancelar</button>
+          <button type="submit" class="checkout-btn" style="flex:1">Confirmar pago</button>
+        </div>
+      </form>
+
+      <div id="paymentSuccess" style="display:none" class="success"></div>
+    </div>
+  </div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script>
+  /* -----------------------------------------------------
+     DATOS DE EJEMPLO (MISMO ARRAY, NO SE TOCA)
+  ----------------------------------------------------- */
+  const products = [
+    { id:1, name:'Arroz Premium 1kg', origin:'Rappi', price:4200, eta:'25-35 min', img:'imagenes/arroz_rappi.jpeg', desc:'Arroz de alta calidad.'},
+    { id:2, name:'Arroz Premium 1kg', origin:'Didi', price:4000, eta:'30-40 min', img:'imagenes/arroz_didi.jpeg', desc:'Presentación 1kg con empaque reforzado.'},
+    { id:3, name:'Audífonos Bluetooth', origin:'Falabella', price:52000, eta:'1-3 días', img:'imagenes/audifonosbluetooth_falabella.jpeg', desc:'Sonido estéreo.'},
+    { id:4, name:'Audífonos Bluetooth', origin:'Rappi', price:49900, eta:'1-3 días', img:'imagenes/audifonosbluetooth_rappi.jpeg', desc:'Diseño ergonómico.'},
+    { id:5, name:'Empanadas (4)', origin:'Rappi', price:12000, eta:'20-30 min', img:'imagenes/empanadas_rappi.jpeg', desc:'Empanadas doradas.'},
+    { id:6, name:'Empanadas (4)', origin:'iFood', price:11000, eta:'20-30 min', img:'imagenes/empanadas_ifood.jpeg', desc:'Recién preparadas.'},
+    { id:7, name:'Café Molido 250g', origin:'Éxito', price:9500, eta:'2-4 días', img:'imagenes/cafe_exito.jpeg', desc:'Tueste medio.'},
+    { id:8, name:'Café Molido 250g', origin:'Falabella', price:11000, eta:'2-4 días', img:'imagenes/cafe_falabella.jpeg', desc:'Mezcla premium.'}
+  ];
+
+  /* =====================================================
+     ESTADO GENERAL
+  ===================================================== */
+  let cart = [];
+  let reviews = JSON.parse(localStorage.getItem('helpus_reviews') || '[]');
+
+  const toastEl = document.getElementById("toast");
+  const cartListEl = document.getElementById("cartList");
+  const totalPriceEl = document.getElementById("totalPrice");
+  const cartCountEl = document.getElementById("cartCount");
+
+
+  /* =====================================================
+     TOAST DE NOTIFICACIONES
+  ===================================================== */
+  function showToast(msg){
+    toastEl.innerText = msg;
+    toastEl.classList.add("show");
+    setTimeout(()=>toastEl.classList.remove("show"), 1700);
+  }
+
+
+  /* =====================================================
+     RENDER DE PRODUCTOS
+  ===================================================== */
+  function currency(n){ return "$" + n.toLocaleString("es-CO"); }
+
+  function renderList(){
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const src = document.getElementById('source').value;
+    const grid = document.getElementById('productGrid');
+
+    grid.innerHTML = '';
+
+    const filtered = products.filter(p=>{
+      const matchQ = q === '' || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q);
+      const matchS = src === 'all' || p.origin === src;
+      return matchQ && matchS;
+    });
+
+    if(filtered.length === 0){
+      grid.innerHTML = `<div style="padding:18px;color:#6b7280">No se encontraron productos.</div>`;
+      return;
+    }
+
+    filtered.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'card';
+
+      div.innerHTML = `
+        <div class="img-wrap">
+          <img src="${p.img}" alt="${p.name}" onerror="this.src='imagenes/default.jpeg'">
+        </div>
+        <div class="card-body">
+          <div class="meta">
+            <div>
+              <h3 class="title">${p.name}</h3>
+              <div class="desc">${p.desc}</div>
+            </div>
+            <div class="origin">${p.origin}</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+            <div>
+              <div class="price">${currency(p.price)}</div>
+              <div class="eta">${p.eta}</div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button class="btn-compare btn" onclick="openCompare('${p.name.replace(/'/g,"\\'")}')">Comparar</button>
+            <button class="btn-add btn" onclick="addToCart(${p.id})">Agregar</button>
+          </div>
+        </div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function resetFilters(){
+    document.getElementById('q').value = '';
+    document.getElementById('source').value = 'all';
+    renderList();
+  }
+
+
+  /* =====================================================
+     COMPARADOR
+  ===================================================== */
+  let originalModalHTML = "";
+
+  function openCompare(productName){
+    const modal = document.getElementById("checkoutModal");
+
+    if(originalModalHTML === ""){
+      originalModalHTML = modal.innerHTML;
+    }
+
+    const rows = products.filter(p => p.name.toLowerCase() === productName.toLowerCase());
+
+    let html = rows.map(r => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef4fb">
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="width:44px;height:36px;border-radius:6px;overflow:hidden">
+            <img src="${r.img}" style="width:44px;height:36px;object-fit:cover" onerror="this.src='imagenes/default.jpeg'">
+          </div>
+          <strong>${r.origin}</strong>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800">${currency(r.price)}</div>
+          <div style="font-size:12px;color:#6b7280">${r.eta}</div>
+        </div>
+      </div>
+    `).join("");
+
+    modal.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Comparación — ${productName}</h3>
+        <button class="close-btn" onclick="restoreModal()">Cerrar</button>
+      </div>
+      <div style="margin-top:12px">${html}</div>
+    `;
+
+    document.getElementById("checkoutBack").style.display = "flex";
+  }
+
+  function restoreModal(){
+    const modal = document.getElementById("checkoutModal");
+    modal.innerHTML = originalModalHTML;
+    document.getElementById("checkoutBack").style.display = "none";
+  }
+
+
+  /* =====================================================
+     CARRITO
+  ===================================================== */
+  function addToCart(id){
+    const p = products.find(x=>x.id===id);
+    cart.push(p);
+    renderCart();
+    showToast(`✔ ${p.name} agregado`);
+  }
+
+  function renderCart(){
+    cartListEl.innerHTML = '';
+
+    if(cart.length === 0){
+      cartListEl.innerHTML = `<div class="cart-empty">No hay productos en el carrito.</div>`;
+      totalPriceEl.innerText = "$0";
+      cartCountEl.innerText = "0";
+      return;
+    }
+
+    cart.forEach((c, i)=>{
+      const item = document.createElement("div");
+      item.className = "cart-item";
+      item.innerHTML = `
+        <div class="ci-thumb">
+          <img src="${c.img}" alt="${c.name}" onerror="this.src='imagenes/default.jpeg'">
+        </div>
+        <div class="ci-info">
+          <div class="ci-name">${c.name}</div>
+          <div class="ci-meta">${c.origin} • ${c.eta}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="ci-price">${currency(c.price)}</div>
+          <button class="ci-remove" onclick="removeFromCart(${i})">Eliminar</button>
+        </div>
+      `;
+      cartListEl.appendChild(item);
+    });
+
+    const total = cart.reduce((s,i)=>s+i.price,0);
+    totalPriceEl.innerText = currency(total);
+    cartCountEl.innerText = cart.length;
+  }
+
+  function removeFromCart(index){
+    showToast(`❌ ${cart[index].name} eliminado`);
+    cart.splice(index,1);
+    renderCart();
+  }
+
+
+  /* =====================================================
+     RESEÑAS
+  ===================================================== */
+  const reviewsListEl = document.getElementById("reviewsList");
+
+  function renderReviews(){
+    reviewsListEl.innerHTML = '';
+
+    if(reviews.length === 0){
+      reviewsListEl.innerHTML = `<div style="color:#6b7280;margin-top:8px">Aún no hay reseñas.</div>`;
+      return;
+    }
+
+    reviews.slice().reverse().forEach(r=>{
+      const d = document.createElement("div");
+      d.className = "review-item";
+      d.innerHTML = `
+        <strong>${r.name}</strong> — 
+        <span style="color:#6b7280">${r.rating}★</span>
+        <div style="margin-top:6px">${r.text}</div>
+      `;
+      reviewsListEl.appendChild(d);
+    });
+  }
+
+  function submitReview(e){
+    e.preventDefault();
+
+    const name = document.getElementById("r-name").value.trim();
+    const rating = document.getElementById("r-rating").value;
+    const text = document.getElementById("r-text").value.trim();
+
+    reviews.push({name,rating,text,date:new Date().toISOString()});
+    localStorage.setItem("helpus_reviews", JSON.stringify(reviews));
+
+    renderReviews();
+
+    document.getElementById("reviewForm").reset();
+    showToast("Gracias por tu reseña 😊");
+  }
+
+  function fillExampleReview(){
+    document.getElementById("r-name").value = "María";
+    document.getElementById("r-rating").value = 5;
+    document.getElementById("r-text").value = "Muy útil y rápida para comparar precios.";
+  }
+
+  function clearReviews(){
+    if(!confirm("¿Borrar TODAS las reseñas?")) return;
+    reviews = [];
+    localStorage.removeItem("helpus_reviews");
+    renderReviews();
+    showToast("Reseñas eliminadas");
+  }
+
+
+  /* =====================================================
+     CHECKOUT
+  ===================================================== */
+  function openCheckout(){
+    if(cart.length === 0){
+      showToast("El carrito está vacío");
+      return;
+    }
+
+    const list = cart.map(c=>`• ${c.name} — ${currency(c.price)}`).join("<br>");
+    const total = cart.reduce((s,i)=>s+i.price,0);
+
+    document.getElementById("orderSummary").innerHTML = `
+      <div><strong>Resumen de compra:</strong></div>
+      <div style="margin-top:6px">${list}</div>
+      <div style="margin-top:8px;font-weight:700">Total: ${currency(total)}</div>
+    `;
+
+    document.getElementById("checkoutBack").style.display = "flex";
+  }
+
+  function closeCheckout(){
+    document.getElementById("checkoutBack").style.display = "none";
+  }
+
+  function togglePaymentFields(){
+    const m = document.getElementById("method").value;
+    document.getElementById("cardFields").style.display = (m === "card") ? "block" : "none";
+  }
+
+  function completePayment(e){
+    e.preventDefault();
+
+    const name = document.getElementById("c-name").value.trim();
+    const method = document.getElementById("method").value;
+    const bank = document.getElementById("bank").value;
+
+    if(!name || !method || !bank){
+      showToast("Completa los datos del pago");
+      return;
+    }
+
+    cart = [];
+    renderCart();
+
+    document.getElementById("paymentSuccess").style.display = "block";
+    document.getElementById("paymentSuccess").innerHTML = `
+      <strong>✔ Pago exitoso</strong><br>
+      Gracias por tu compra, ${name}
+    `;
+
+    setTimeout(()=>closeCheckout(),1400);
+  }
+
+
+  /* =====================================================
+     INIT
+  ===================================================== */
+  function init(){
+    renderList();
+    renderCart();
+    renderReviews();
+  }
+  init();
+  </script>
+
+</body>
